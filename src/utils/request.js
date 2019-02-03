@@ -2,6 +2,7 @@ import axios from 'axios'
 import { Message } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
+const qs = require('qs')
 
 // create an axios instance
 const service = axios.create({
@@ -12,16 +13,27 @@ const service = axios.create({
 // request interceptor
 service.interceptors.request.use(
   config => {
-    // Do something before request is sent
+    config.data.check = 'stropsutgnet'
     if (store.getters.token) {
       // 让每个请求携带token-- ['X-Token']为自定义key 请根据实际情况自行修改
-      config.headers['X-Token'] = getToken()
+      config.data['token'] = getToken()
+    }
+    if (
+      config.method === 'post' &&
+      !(config.data instanceof FormData) &&
+      config.data
+    ) {
+      Object.keys(config.data).forEach(key => {
+        if (typeof config.data[key] === 'object') {
+          config.data[key] = JSON.stringify(config.data[key]) // 这里必须使用内置JSON对象转换
+        }
+      })
+      config.data = qs.stringify(config.data)
     }
     return config
   },
   error => {
-    // Do something with request error
-    console.log(error) // for debug
+    console.log(error)
     Promise.reject(error)
   }
 )
